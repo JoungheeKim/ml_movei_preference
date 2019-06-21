@@ -194,6 +194,53 @@ class SeqModel2(nn.Module):
         y_hat = self.softmax(y_hat)
         return y_hat
 
+class SeqModel3(nn.Module):
+
+    def __init__(self,
+                 input_size,
+                 word_vec_dim,
+                 hidden_size,
+                 output_size,
+                 n_layers=4,
+                 dropout_p=.2,
+                 device = 'cpu'
+                 ):
+        self.input_size = int(input_size)
+        self.word_vec_dim = int(word_vec_dim)
+        self.hidden_size = int(hidden_size)
+        self.output_size = int(output_size)
+        self.n_layers = int(n_layers)
+        self.dropout_p = float(dropout_p)
+        self.device = device
+
+        super(SeqModel3, self).__init__()
+
+        self.embedding = nn.Embedding(input_size, word_vec_dim)
+        self.rnn = nn.GRU(input_size=word_vec_dim,
+                          hidden_size=hidden_size,
+                          num_layers=n_layers,
+                          batch_first=True,
+                          dropout=dropout_p,
+                          bidirectional=False
+                          )
+
+        self.output = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=-1)  ##마지막 dim에 softmax를 하라...
+
+    def forward(self, x):
+        length = x.size(1)
+
+        x = self.embedding(x)
+        h_src, h_0_tgt = self.rnn(x)
+
+        y_hat = []
+        for index in range(length):
+            y_temp = self.output(h_src[:,index,:])
+            y_temp = self.softmax(y_temp).unsqueeze(1)
+            y_hat.append(y_temp)
+        y_hat = torch.cat(y_hat, dim=1)
+        return y_hat
+
 
 class SeqModel(nn.Module):
 

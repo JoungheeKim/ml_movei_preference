@@ -87,13 +87,15 @@ class Trainer():
         optimizer = optim.Adam(self.model.parameters())
         for idx in progress_bar:  # Iterate from 1 to n_epochs
             avg_train_loss = self.train_epoch(train, optimizer)
-            avg_valid_loss = self.validate(valid)
-            progress_bar.set_postfix_str('train_loss=%.4e valid_loss=%.4e min_valid_loss=%.4e' % (avg_train_loss,
-                                                                                                  avg_valid_loss,
-                                                                                                  best_loss))
-            logging.debug('train_loss=%.4e valid_loss=%.4e min_valid_loss=%.4e' % (avg_train_loss,
-                                                                                   avg_valid_loss,
-                                                                                   best_loss))
+            avg_valid_loss, avg_valid_correct = self.validate(valid)
+            progress_bar.set_postfix_str('train_loss=%.4e valid_loss=%.4e valid_correct=%.4e min_valid_loss=%.4e' % (avg_train_loss,
+                                                                                                                     avg_valid_loss,
+                                                                                                                     avg_valid_correct,
+                                                                                                                     best_loss))
+            logging.debug('train_loss=%.4e valid_loss=%.4e valid_correct=%.4e min_valid_loss=%.4e' % (avg_train_loss,
+                                                                                                      avg_valid_loss,
+                                                                                                      avg_valid_correct,
+                                                                                                      best_loss))
 
             if (self.lower_is_better and avg_valid_loss < best_loss) or \
                (not self.lower_is_better and avg_valid_loss > best_loss):
@@ -143,9 +145,9 @@ class Trainer():
         names = options.get_name()
         for idx, name in enumerate(names):
             if name == 'MOVIE_ID':
-                return labels[:, idx].type(torch.long).to(self.device)
+                return labels[:, :, idx].type(torch.long).to(self.device)
 
-        return labels[:, 0].type(torch.long).to(self.device)
+        return labels[:, :, 0].type(torch.long).to(self.device)
 
 
 
@@ -174,7 +176,7 @@ class Trainer():
             ## |y_hat| = (batch_size, length, output_size)
 
             # Calcuate loss and gradients with back-propagation.
-            y = self.get_movie(self.options, labels)
+            y = self.get_movie(self.options, labels)[:,-1]
             loss = self.crit(y_hat, y)
             loss.backward()
 
@@ -215,7 +217,7 @@ class Trainer():
 
                 y_hat = self.model(x)
 
-                y = self.get_movie(self.options, labels)
+                y = self.get_movie(self.options, labels)[:,-1]
                 loss = self.crit(y_hat, y)
 
                 total_loss += float(loss)
@@ -232,7 +234,7 @@ class Trainer():
 
             progress_bar.close()
         self.model.train()
-        return avg_loss
+        return avg_loss, avg_correct
 
     def test(self, test):
         total_loss, total_word_count = 0, 0

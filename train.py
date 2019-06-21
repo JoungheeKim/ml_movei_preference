@@ -5,9 +5,7 @@ import torch.nn as nn
 from data_loader import btvDataLoader
 import logging
 from tools import LOGFILE_LEVEL, CONSOLE_LEVEL
-from trainer import Trainer
 from tools import OPTIONS, optionStruct
-from model import SeqModel
 
 def build_config():
     parser = ArgumentParser()
@@ -20,8 +18,9 @@ def build_config():
     parser.add_argument("--window_size", dest="window_size", default="10")
     parser.add_argument("--device", dest="device", default="gpu")
     parser.add_argument("--test_portion", dest="test_portion", default="0.05")
-    parser.add_argument("--model", dest="model", default="SeqModel")
-    parser.add_argument("--hidden_size", dest="hidden_size", default=512)
+    parser.add_argument("--model", dest="model", default="SeqModel3")
+    parser.add_argument("--hidden_size", dest="hidden_size", default=256)
+    parser.add_argument("--word_vec_dim", dest="word_vec_dim", default=256)
     parser.add_argument("--lr", dest="lr", default=1.0)
     parser.add_argument("--n_epochs", dest="n_epochs", default=18)
     parser.add_argument("--early_stop", dest="early_stop", default=-1)
@@ -71,7 +70,8 @@ if __name__ == '__main__':
     options.set_genre_size(loader.get_genre_size())
 
     if config.model == 'SeqModel':
-
+        from model import SeqModel
+        from trainer import Trainer
 
         model = SeqModel(
             input_size=options.get_input_size(),
@@ -82,18 +82,21 @@ if __name__ == '__main__':
         ).to(config.device)
 
         crits = nn.NLLLoss()
-    else:
-        model = SeqModel(
-            input_size=options.get_input_size(),
+        trainer = Trainer(model, crits, config, options)
+    elif config.model == 'SeqModel3':
+        from model import SeqModel3
+        from sequence_trainer import seq_Trainer
+        model = SeqModel3(
+            input_size=options.get_movie_size(),
+            word_vec_dim=config.word_vec_dim,
             hidden_size=config.hidden_size,
             output_size=options.get_movie_size(),
-            n_layers=4,
-            device=config.device
+            device='cpu'
         ).to(config.device)
 
         crits = nn.NLLLoss()
+        trainer = seq_Trainer(model, crits, config, options)
 
-    trainer = Trainer(model, crits, config, options)
     trainer.train(train, valid)
 
 

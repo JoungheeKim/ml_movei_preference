@@ -139,6 +139,7 @@ class btvDataLoader():
         # progress_bar = tqdm(iterator, desc='DATA_LOADING: ', unit='user')
         datas = []
         labels = []
+        lengths = []
         temp_user_id = -1
         temp_count = 0
         for index, user_id in enumerate(progress_bar):
@@ -150,9 +151,12 @@ class btvDataLoader():
 
             if temp_count > self.window_size:
                 datas.append(raw_data[index - self.window_size:index])
-                labels.append(raw_data[index])
+                labels.append(raw_data[index + 1 - self.window_size:index+1])
+                lengths.append(self.window_size)
 
         progress_bar.close()
+
+        logging.debug("FULL data : [" + str(len(datas)) + "]")
 
         dataset = SequenceDataset(datas, labels)
 
@@ -160,6 +164,8 @@ class btvDataLoader():
         test_size = int(test_portion * len(dataset))
         train_size = len(dataset) - test_size
         train, valid = torch.utils.data.random_split(dataset, [train_size, test_size])
+        logging.debug("train data : [" + str(len(train)) + "]")
+        logging.debug("valid data : [" + str(len(valid)) + "]")
         self.train = DataLoader(train, batch_size=self.batch_size, shuffle=True)
         self.valid = DataLoader(valid, batch_size=self.batch_size, shuffle=False)
 
