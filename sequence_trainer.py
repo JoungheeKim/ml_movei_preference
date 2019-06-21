@@ -50,14 +50,12 @@ class seq_Trainer(Trainer):
 
             # Simple math to show stats.
             # Don't forget to detach final variables.
+
             total_loss += float(loss)
             total_word_count += int(batch.size(1))
             avg_loss = total_loss / total_word_count
-
-            ps = torch.exp(y_hat)
-            top_p, top_class = ps.topk(1, dim=1)
-            equals = top_class == y.view(*top_class.shape)
-            total_correct += torch.sum(equals)
+            pred = y_hat.argmax(dim=1, keepdim=True)
+            total_correct += pred.eq(y.view_as(pred)).sum()
 
             avg_correct = total_correct / total_word_count
             progress_bar.set_postfix_str('avg_loss=%.4e  correct=%.4e' % (avg_loss, avg_correct))
@@ -86,16 +84,18 @@ class seq_Trainer(Trainer):
                 y_hat = self.model(x)
 
                 y = self.get_movie(self.options, labels)
+
+                ##size
+                y = y.view(-1)
+                y_hat = y_hat.view(y.size(0), -1)
+
                 loss = self.crit(y_hat, y)
 
                 total_loss += float(loss)
                 total_word_count += int(batch.size(1))
                 avg_loss = total_loss / total_word_count
-
-                ps = torch.exp(y_hat)
-                top_p, top_class = ps.topk(1, dim=1)
-                equals = top_class == y.view(*top_class.shape)
-                total_correct += torch.sum(equals)
+                pred = y_hat.argmax(dim=1, keepdim=True)
+                total_correct += pred.eq(y.view_as(pred)).sum()
 
                 avg_correct = total_correct / total_word_count
                 progress_bar.set_postfix_str('avg_loss=%.4e  correct=%.4e' % (avg_loss, avg_correct))
