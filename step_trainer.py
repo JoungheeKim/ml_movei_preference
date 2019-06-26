@@ -2,7 +2,7 @@ from trainer import Trainer
 import torch
 from tqdm import tqdm
 
-class seq_Trainer(Trainer):
+class step_Trainer(Trainer):
     def __init__(self, model, crit, config, options):
         super().__init__(model, crit, config, options)
 
@@ -35,15 +35,11 @@ class seq_Trainer(Trainer):
 
             optimizer.zero_grad()
 
-            y_hat = self.model(x)
+            y_hat = self.model.search(x)
             ## |y_hat| = (batch_size, length, output_size)
 
             # Calcuate loss and gradients with back-propagation.
-            y = self.get_movie(self.options, labels)
-
-            ##size
-            y = y.view(-1)
-            y_hat = y_hat.view(y.size(0), -1)
+            y = self.get_movie(self.options, labels)[:, -1]
 
             loss = self.crit(y_hat, y)
             loss.backward()
@@ -100,3 +96,4 @@ class seq_Trainer(Trainer):
             progress_bar.close()
         self.model.train()
         return avg_loss, avg_correct
+

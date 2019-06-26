@@ -24,10 +24,11 @@ class Trainer():
                      }
         logging.info("###init Trainer")
 
-        path = os.path.join(os.getcwd(), 'model')
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        self.model_path = os.path.join(path, "model")
+        if hasattr(config, 'target'):
+            path = os.path.join(os.getcwd(), config.target)
+            if not os.path.isdir(path):
+                os.mkdir(path)
+            self.model_path = os.path.join(path, config.target)
 
         ##options
         if hasattr(options, 'movie_size'):
@@ -50,6 +51,9 @@ class Trainer():
             emb.weight.data = torch.eye(size)
             emb.weight.requires_grad = False
             self.genre_emb = emb
+
+        if hasattr(config, 'test_num'):
+            self.test_num = config.test_num
 
     def get_best_model(self):
         self.model.load_state_dict(self.best['model'])
@@ -88,11 +92,11 @@ class Trainer():
         for idx in progress_bar:  # Iterate from 1 to n_epochs
             avg_train_loss = self.train_epoch(train, optimizer)
             avg_valid_loss, avg_valid_correct = self.validate(valid)
-            progress_bar.set_postfix_str('train_loss=%.4e valid_loss=%.4e valid_correct=%.4e min_valid_loss=%.4e' % (avg_train_loss,
+            progress_bar.set_postfix_str('train_loss=%.4e valid_loss=%.4e valid_correct=%.4f min_valid_loss=%.4e' % (avg_train_loss,
                                                                                                                      avg_valid_loss,
                                                                                                                      avg_valid_correct,
                                                                                                                      best_loss))
-            logging.debug('train_loss=%.4e valid_loss=%.4e valid_correct=%.4e min_valid_loss=%.4e' % (avg_train_loss,
+            logging.debug('train_loss=%.4e valid_loss=%.4e valid_correct=%.4f min_valid_loss=%.4e' % (avg_train_loss,
                                                                                                       avg_valid_loss,
                                                                                                       avg_valid_correct,
                                                                                                       best_loss))
@@ -241,6 +245,7 @@ class Trainer():
         avg_loss = 0
 
         result = []
+        user_ids = []
 
         with torch.no_grad():
             total_loss, total_word_count = 0, 0
@@ -249,18 +254,30 @@ class Trainer():
 
             self.model.eval()
             # Iterate for whole valid-set.
-            for idx, batch in enumerate(progress_bar):
-                movie = batch[:, :, 0].type(torch.long).to(self.device)
-                nation = batch[:, :, 3].type(torch.long).to(self.device)
-                genre = batch[:, :, 4].type(torch.long).to(self.device)
+            for idx, (batch, user_id) in enumerate(progress_bar):
+                x = self.get_movie(self.options, batch)
 
-                seq = batch[:, :, 1].unsqueeze(2).to(self.device)
-                score = batch[:, :, 2].unsqueeze(2).to(self.device)
-                extra = torch.cat([seq, score], dim=2).to(self.device)
+                y_hat = self.model.search(x)
+                values, indices = y_hat.topk(self.test_num)
+                result.append(indices.view(-1, 1).cpu())
+                user_id = torch.cat([user_id.unsqueeze(1)]*self.test_num,  dim=1)
+                user_ids.append(user_id.view(-1, 1).cpu())
 
-                y_hat = self.model(movie, nation, genre, extra)
-                result.append(y_hat)
 
             progress_bar.close()
-
+        result = torch.cat(result)
+        result = result.view(-1)
+        user_ids = torch.cat(user_ids).view(-1)
+        import pandas as pd
+        user_ids = user_ids.numpy()
+        result = result.numpy()
+        data = {"USER_ID" : user_ids,
+                "MOVIE_ID" : result,
+                }
+        pd.DataFrame(data).to_csv("result.csv", encoding='euc_kr', index=False)
         return result
+
+    def save_result(self, data):
+        import pandas as pd
+        pd.DataFrame(data, columns=["USER_ID","MOVIE_ID"]).to_csv("result.csv", encoding='euc_kr')
+

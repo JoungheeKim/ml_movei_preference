@@ -241,6 +241,16 @@ class SeqModel3(nn.Module):
         y_hat = torch.cat(y_hat, dim=1)
         return y_hat
 
+    def search(self, x):
+        x = self.embedding(x)
+        h_src, h_0_tgt = self.rnn(x)
+        last_hidden = h_src[:, -1, :]
+        y_hat = self.output(last_hidden)
+        y_hat = self.softmax(y_hat)
+        return y_hat
+
+
+
 
 class SeqModel(nn.Module):
 

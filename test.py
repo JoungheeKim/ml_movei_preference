@@ -5,19 +5,18 @@ import torch.nn as nn
 from data_loader import btvDataLoader
 import logging
 from tools import LOGFILE_LEVEL, CONSOLE_LEVEL
-from trainer import Trainer
-from model import SeqModel
 
 
 def build_config():
     parser = ArgumentParser()
 
-    parser.add_argument("--model_path", dest="model_path", metavar="model_path", default="model/model5.pwf")
+    parser.add_argument("--model_path", dest="model_path", metavar="model_path", default="model/model1.pwf")
     parser.add_argument("--device", dest="device", default="gpu")
     parser.add_argument("--question_path", dest="question_path", default='data/SKB_DLP_QUESTION.csv')
     parser.add_argument("--movie_path", dest="movie_path", default='data/NEW_MOVIES.csv')
     parser.add_argument("--batch_size", dest="batch_size", default=32)
     parser.add_argument("--n_epochs", dest="n_epochs", default=18)
+    parser.add_argument("--test_num", dest="test_num", default=5)
     """
     parser.add_argument("--mode", dest="mode", metavar="MODE", default="train",
                         help="Choose Mode : train, evaluate, generate")
@@ -68,7 +67,6 @@ if __name__ == "__main__":
     checkpoint = load_training(config.model_path)
     options = checkpoint['options']
     saved_config = checkpoint['config']
-
     loader = btvDataLoader(movie_path=config.movie_path,
                            view_path=None,
                            question_path=config.question_path,
@@ -79,21 +77,19 @@ if __name__ == "__main__":
 
     test = loader.load_test_data()
 
-    logging.info("Init model")
-    model = SeqModel(
-        input_size=options['input_size'],
-        word_vec_dim=options['word_vec_dim'],
-        hidden_size=options['hidden_size'],
-        output_size=options['output_size'],
-        nation_size=options['nation_size'],
-        genre_size=options['genre_size'],
-        extra_size=options['extra_size'],
-        n_layers=4,
-        device=config.device
-    ).to(config.device)
-    crits = nn.NLLLoss()
+    from model import SeqModel3
+    from sequence_trainer import seq_Trainer
 
-    trainer = Trainer(model, crits, config)
+    model = SeqModel3(
+        input_size=options.get_movie_size(),
+        word_vec_dim=saved_config.word_vec_dim,
+        hidden_size=saved_config.hidden_size,
+        output_size=options.get_movie_size(),
+        device='cpu'
+    ).to(config.device)
+
+    crits = nn.NLLLoss()
+    trainer = seq_Trainer(model, crits, config, options)
     trainer.test(test)
 
 

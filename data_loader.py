@@ -188,12 +188,13 @@ class btvDataLoader():
         # selected_column = ['MOVIE_ID', 'WATCH_SEQ', 'score', 'nation', 'genre']
         selected_column = InputFeatures().get_columns()
 
+        ##############################
         raw_data = result_df[selected_column].values.tolist()
         iterator = result_df['USER_ID'].values.tolist()
-
         progress_bar = tqdm(iterator, desc='DATA_LOADING: ', unit='user')
-        # progress_bar = tqdm(iterator, desc='DATA_LOADING: ', unit='user')
         datas = []
+        labels = []
+        lengths = []
         temp_user_id = -1
         temp_count = 0
         for index, user_id in enumerate(progress_bar):
@@ -204,14 +205,16 @@ class btvDataLoader():
             temp_count += 1
 
             if temp_count == self.window_size:
-                datas.append(raw_data[index - self.window_size +1:index+1])
+                temp_index = index+1
+                datas.append(raw_data[temp_index - self.window_size:temp_index])
+                labels.append(user_id)
             elif temp_count > self.window_size:
                 print("박살낫는데?")
 
-        print(torch.tensor(datas).size())
         progress_bar.close()
+        #####################################
 
-        dataset = SequenceDataset(datas)
+        dataset = SequenceDataset(datas, labels)
 
         self.test = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
 
