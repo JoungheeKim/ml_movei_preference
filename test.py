@@ -17,23 +17,7 @@ def build_config():
     parser.add_argument("--batch_size", dest="batch_size", default=32)
     parser.add_argument("--n_epochs", dest="n_epochs", default=18)
     parser.add_argument("--test_num", dest="test_num", default=5)
-    """
-    parser.add_argument("--mode", dest="mode", metavar="MODE", default="train",
-                        help="Choose Mode : train, evaluate, generate")
-    parser.add_argument("--movie_path", dest="movie_path", default='data/NEW_MOVIES.csv')
-    parser.add_argument("--view_path", dest="view_path", default='data/SKB_DLP_VIEWS.csv')
-    parser.add_argument("--question_path", dest="question_path", default='data/SKB_DLP_QUESTION.csv')
-    parser.add_argument("--batch_size", dest="batch_size", default="32")
-    parser.add_argument("--window_size", dest="window_size", default="10")
-    parser.add_argument("--device", dest="device", default="gpu")
-    parser.add_argument("--test_portion", dest="test_portion", default="0.1")
-    parser.add_argument("--model", dest="model", default="SeqModel")
-    parser.add_argument("--word_vec_dim", dest="word_vec_dim", default=256)
-    parser.add_argument("--hidden_size", dest="hidden_size", default=256)
-    parser.add_argument("--lr", dest="lr", default=1.0)
-    parser.add_argument("--n_epochs", dest="n_epochs", default=18)
-    parser.add_argument("--early_stop", dest="early_stop", default=-1)
-    """
+    parser.add_argument("--model", dest="model", default="SeqModel3")
     config = parser.parse_args()
     return config
 
@@ -45,8 +29,6 @@ def _print_config(config):
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(vars(config))
-
-
 
 
 if __name__ == "__main__":
@@ -76,20 +58,33 @@ if __name__ == "__main__":
                            )
 
     test = loader.load_test_data()
+    if config.model == "SeqModel3":
+        from model import SeqModel3
+        from sequence_trainer import seq_Trainer
+        model = SeqModel3(
+            input_size=options.get_movie_size(),
+            word_vec_dim=saved_config.word_vec_dim,
+            hidden_size=saved_config.hidden_size,
+            output_size=options.get_movie_size(),
+            device=config.device
+        ).to(config.device)
 
-    from model import SeqModel3
-    from sequence_trainer import seq_Trainer
+        crits = nn.NLLLoss()
+        trainer = seq_Trainer(model, crits, config, options)
+    else:
+        from model import SeqModel
+        from trainer import Trainer
 
-    model = SeqModel3(
-        input_size=options.get_movie_size(),
-        word_vec_dim=saved_config.word_vec_dim,
-        hidden_size=saved_config.hidden_size,
-        output_size=options.get_movie_size(),
-        device='cpu'
-    ).to(config.device)
+        model = SeqModel(
+            input_size=options.get_input_size(),
+            hidden_size=saved_config.hidden_size,
+            output_size=options.get_movie_size(),
+            n_layers=4,
+            device=config.device
+        ).to(config.device)
 
-    crits = nn.NLLLoss()
-    trainer = seq_Trainer(model, crits, config, options)
+        crits = nn.NLLLoss()
+        trainer = Trainer(model, crits, config, options)
     trainer.test(test)
 
 

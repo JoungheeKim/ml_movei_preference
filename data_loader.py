@@ -209,7 +209,7 @@ class btvDataLoader():
                 datas.append(raw_data[temp_index - self.window_size:temp_index])
                 labels.append(user_id)
             elif temp_count > self.window_size:
-                print("박살낫는데?")
+                print("Error : 데이터 SIZE가 맞지 않는다.")
 
         progress_bar.close()
         #####################################

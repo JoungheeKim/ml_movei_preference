@@ -274,10 +274,10 @@ class Trainer():
         data = {"USER_ID" : user_ids,
                 "MOVIE_ID" : result,
                 }
-        pd.DataFrame(data).to_csv("result.csv", encoding='euc_kr', index=False)
-        return result
+        self.save_result(data)
+        return data
 
     def save_result(self, data):
         import pandas as pd
-        pd.DataFrame(data, columns=["USER_ID","MOVIE_ID"]).to_csv("result.csv", encoding='euc_kr')
+        pd.DataFrame(data).to_csv("result.csv", encoding='euc_kr', index=False)
 
