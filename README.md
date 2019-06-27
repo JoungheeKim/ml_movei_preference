@@ -34,7 +34,7 @@ To train model set options
 
 ##### EXAMPLE
 ```python
-python train.py
+python train.py --model seqModel3 --n_epochs 20 --batch_size 16
 ```
 Running this code you will get trained model(ex. model.pwf) files in target directory
 
@@ -51,9 +51,9 @@ To test model set options
             
 ##### EXAMPLE
 ```python
-python train.py
+python test.py --test_num 5
 ```
-Running this code you will get trained model(ex. model.pwf) files in target directory
+Running this code you will get (.csv) files that has top-k recommend movie list for each user_id
             
      
         
