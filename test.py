@@ -1,8 +1,7 @@
 from argparse import ArgumentParser
-import sys
 import torch
 import torch.nn as nn
-from data_loader import btvDataLoader
+from datahandler.data_loader import btvDataLoader
 import logging
 from tools import LOGFILE_LEVEL, CONSOLE_LEVEL
 
@@ -10,7 +9,7 @@ from tools import LOGFILE_LEVEL, CONSOLE_LEVEL
 def build_config():
     parser = ArgumentParser()
 
-    parser.add_argument("--model_path", dest="model_path", metavar="model_path", default="model/model1.pwf")
+    parser.add_argument("--model_path", dest="model_path", metavar="model_path", default="target/model1.pwf")
     parser.add_argument("--device", dest="device", default="gpu")
     parser.add_argument("--question_path", dest="question_path", default='data/SKB_DLP_QUESTION.csv')
     parser.add_argument("--movie_path", dest="movie_path", default='data/NEW_MOVIES.csv')
@@ -59,8 +58,8 @@ if __name__ == "__main__":
 
     test = loader.load_test_data()
     if config.model == "SeqModel3":
-        from model import SeqModel3
-        from sequence_trainer import seq_Trainer
+        from model.model import SeqModel3
+        from trainer.sequence_trainer import seq_Trainer
         model = SeqModel3(
             input_size=options.get_movie_size(),
             word_vec_dim=saved_config.word_vec_dim,
@@ -72,8 +71,8 @@ if __name__ == "__main__":
         crits = nn.NLLLoss()
         trainer = seq_Trainer(model, crits, config, options)
     else:
-        from model import SeqModel
-        from trainer import Trainer
+        from model.model import SeqModel
+        from trainer.trainer import Trainer
 
         model = SeqModel(
             input_size=options.get_input_size(),

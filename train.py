@@ -1,8 +1,7 @@
 from argparse import ArgumentParser
-import sys
 import torch
 import torch.nn as nn
-from data_loader import btvDataLoader
+from datahandler.data_loader import btvDataLoader
 import logging
 from tools import LOGFILE_LEVEL, CONSOLE_LEVEL
 from tools import OPTIONS, optionStruct
@@ -24,6 +23,7 @@ def build_config():
     parser.add_argument("--lr", dest="lr", default=1.0)
     parser.add_argument("--n_epochs", dest="n_epochs", default=18)
     parser.add_argument("--early_stop", dest="early_stop", default=-1)
+    parser.add_argument("--target", dest="target", default="target")
 
     config = parser.parse_args()
     return config
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     options.set_genre_size(loader.get_genre_size())
 
     if config.model == 'SeqModel':
-        from model import SeqModel
+        from model.model import SeqModel
         from trainer import Trainer
 
         model = SeqModel(
@@ -84,8 +84,8 @@ if __name__ == '__main__':
         crits = nn.NLLLoss()
         trainer = Trainer(model, crits, config, options)
     elif config.model == 'SeqModel3':
-        from model import SeqModel3
-        from sequence_trainer import seq_Trainer
+        from model.model import SeqModel3
+        from trainer.sequence_trainer import seq_Trainer
         model = SeqModel3(
             input_size=options.get_movie_size(),
             word_vec_dim=config.word_vec_dim,
